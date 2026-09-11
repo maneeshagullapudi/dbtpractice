@@ -1,0 +1,69 @@
+version: 2
+
+sources:
+  - name: zomato_geography
+    description: >
+      Geographic reference data: cities, areas, and delivery zones.
+      Managed by the City Operations team. Changes infrequently —
+      new cities onboarded quarterly. Freshness SLA is lenient (weekly acceptable).
+    database: RAW
+    schema: ZOMATO_GEOGRAPHY
+    loader: fivetran
+
+    tables:
+      - name: cities
+        description: >
+          One row per city where Zomato operates. Tier classification (1, 2, 3)
+          drives pricing strategy and service level targets.
+          Tier 1: Mumbai, Delhi, Bengaluru, Chennai, Hyderabad, Kolkata.
+          Tier 2: All other state capitals and major cities.
+          Tier 3: Emerging markets and smaller cities.
+        columns:
+          - name: city_id
+            description: Integer primary key.
+            data_tests:
+              - not_null
+              - unique
+          - name: city_name
+            description: Official city name as displayed to customers.
+            data_tests:
+              - not_null
+          - name: state
+            description: Indian state or union territory.
+            data_tests:
+              - not_null
+          - name: tier
+            description: City tier classification (1, 2, or 3).
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['1', '2', '3']
+          - name: is_metro
+            description: Whether the city qualifies as a metro (Tier 1 cities).
+            data_tests:
+              - not_null
+          - name: is_active
+            description: Whether Zomato currently operates in this city.
+            data_tests:
+              - not_null
+          - name: launch_date
+            description: Date Zomato launched operations in this city.
+
+      - name: areas
+        description: >
+          Neighbourhood/area-level granularity within a city.
+          Used for delivery zone mapping and area-level operations reporting.
+        columns:
+          - name: area_id
+            data_tests:
+              - not_null
+              - unique
+          - name: city_id
+            data_tests:
+              - not_null
+          - name: area_name
+            data_tests:
+              - not_null
+          - name: pin_code
+            description: Indian postal code (6 digits).

@@ -1,0 +1,127 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: >
+      Staging model for raw order data from the Zomato Transactional source.
+      One row per customer order. Applies column renaming, type casting, and
+      NULL coalescing for amount fields. No business logic.
+
+      Grain: one row per order_id.
+
+    columns:
+      - name: order_id
+        description: Natural primary key from the Orders API (UUID).
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: FK to stg_customers. The customer who placed the order.
+        data_tests:
+          - not_null
+
+      - name: restaurant_id
+        description: FK to stg_restaurants. The restaurant fulfilling the order.
+        data_tests:
+          - not_null
+
+      - name: delivery_partner_id
+        description: FK to stg_delivery_partners. NULL until a partner is assigned.
+
+      - name: city_id
+        description: FK to stg_cities. The city where the order is delivered.
+        data_tests:
+          - not_null
+
+      - name: promo_id
+        description: FK to stg_promotions. NULL if no promo code was applied.
+
+      - name: subtotal_amount
+        description: Sum of all item prices before fees and discounts. In rupees.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 50000
+
+      - name: delivery_fee
+        description: Fee charged to the customer for delivery. In rupees. Zero for free-delivery promos.
+        data_tests:
+          - not_null
+          - not_negative
+
+      - name: platform_fee
+        description: Zomato's platform service fee charged to the customer. In rupees.
+        data_tests:
+          - not_null
+          - not_negative
+
+      - name: promo_discount_amount
+        description: Discount applied via promo code. In rupees. Zero if no promo used.
+        data_tests:
+          - not_null
+          - not_negative
+
+      - name: gst_amount
+        description: GST component of the total order value. In rupees.
+        data_tests:
+          - not_null
+          - not_negative
+
+      - name: total_amount
+        description: >
+          Final amount charged to the customer: subtotal + delivery_fee + platform_fee
+          - promo_discount_amount + gst_amount. In rupees.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100000
+
+      - name: order_status
+        description: Current status in the order lifecycle (lowercased at staging).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['pending', 'accepted', 'preparing', 'out_for_delivery',
+                         'delivered', 'cancelled', 'refunded', 'test_order']
+
+      - name: cancellation_reason
+        description: >
+          Reason code for cancellation. NULL for non-cancelled orders.
+          Values: customer_cancelled, restaurant_rejected, no_delivery_partner,
+                  payment_failed, system_cancelled.
+
+      - name: ordered_at
+        description: UTC timestamp when the customer submitted the order.
+        data_tests:
+          - not_null
+
+      - name: accepted_at
+        description: UTC timestamp when the restaurant accepted the order. NULL for unaccepted orders.
+
+      - name: prepared_at
+        description: UTC timestamp when the restaurant marked the order as ready for pickup.
+
+      - name: picked_up_at
+        description: UTC timestamp when the delivery partner picked up the order.
+
+      - name: delivered_at
+        description: UTC timestamp when the order was delivered to the customer.
+
+      - name: cancelled_at
+        description: UTC timestamp of cancellation. NULL for non-cancelled orders.
+
+      - name: updated_at
+        description: UTC timestamp of the last update to this row in the source system. Used as incremental watermark.
+        data_tests:
+          - not_null
+
+      - name: _loaded_at
+        description: Timestamp when Fivetran last synced this row.
+        data_tests:
+          - not_null

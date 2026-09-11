@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_payments
+    description: >
+      Staging model for order payments with normalized payment method and status
+      values plus gateway-fee-adjusted net payment amount.
+
+      Grain: one row per payment_id.
+    columns:
+      - name: payment_id
+        description: Natural payment identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Foreign key to the paid order.
+        data_tests:
+          - not_null
+      - name: payment_status
+        description: Normalized payment lifecycle status.
+        data_tests:
+          - not_null
+      - name: payment_method
+        description: Normalized payment method.
+        data_tests:
+          - not_null
+      - name: payment_amount
+        description: Gross payment amount collected from the customer.
+        data_tests:
+          - not_null
+          - not_negative
+      - name: gateway_fee
+        description: Fee charged by the payment gateway.
+        data_tests:
+          - not_null
+          - not_negative
+      - name: net_amount
+        description: Payment amount net of gateway fees.
+      - name: paid_at
+        description: Timestamp when the payment succeeded or was recorded.
+      - name: settlement_date
+        description: Date the payment settled with the gateway.
+      - name: _loaded_at
+        description: Source load timestamp.
+        data_tests:
+          - not_null

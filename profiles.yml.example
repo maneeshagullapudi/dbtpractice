@@ -1,0 +1,56 @@
+# profiles.yml.example — copy to ~/.dbt/profiles.yml and fill in your credentials
+# NEVER commit the actual profiles.yml — it contains secrets
+
+zomato_food_delivery:
+  target: dev
+  outputs:
+
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ZOMATO_DBT_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'DEV_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ZOMATO_DEV_WH') }}"
+      schema: "DEV_{{ env_var('USER', 'local') | upper }}"
+      threads: "{{ env_var('DBT_THREADS', 4) | int }}"
+      client_session_keep_alive: false
+      connect_retries: 3
+      connect_timeout: 30
+
+    stage:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_CI_USER') }}"
+      private_key_path: /tmp/snowflake_rsa_key.p8
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+      role: ZOMATO_DBT_ROLE
+      database: STAGE_DB
+      warehouse: ZOMATO_CI_WH
+      schema: "CI_{{ env_var('GITHUB_RUN_ID', 'LOCAL') }}_STAGING"
+      threads: 8
+
+    preprod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_STG_USER') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+      role: ZOMATO_DBT_ROLE
+      database: PREPROD_DB
+      warehouse: ZOMATO_STG_WH
+      schema: PREPROD
+      threads: 8
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_PROD_USER') }}"
+      private_key_path: /tmp/snowflake_rsa_key.p8
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE_PROD', '') }}"
+      role: ZOMATO_DBT_ROLE
+      database: PROD_DB
+      warehouse: ZOMATO_PROD_WH
+      schema: PROD
+      threads: 12
