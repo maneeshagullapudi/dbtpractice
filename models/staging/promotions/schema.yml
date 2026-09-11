@@ -1,0 +1,87 @@
+version: 2
+
+models:
+  - name: stg_promotions
+    description: >
+      Staging model for promotion definitions including discount mechanics,
+      funding source, and validity windows.
+
+      Grain: one row per promo_id.
+    columns:
+      - name: promo_id
+        description: Natural promotion identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: promo_code
+        description: Normalized promotion code presented to customers.
+        data_tests:
+          - not_null
+      - name: promo_name
+        description: Promotion display name.
+      - name: discount_type
+        description: Normalized discount type for the promotion.
+        data_tests:
+          - not_null
+      - name: discount_value
+        description: Discount amount or percentage value, depending on discount_type.
+      - name: promo_funder
+        description: Normalized funding source for the promotion.
+      - name: min_order_value
+        description: Minimum order value required for eligibility.
+      - name: max_redemptions
+        description: Maximum total redemptions allowed for the promotion.
+      - name: max_redemptions_per_customer
+        description: Maximum redemptions allowed per customer.
+      - name: is_new_customer_only
+        description: Whether the promotion is restricted to new customers.
+      - name: valid_from
+        description: Promotion validity start date.
+      - name: valid_to
+        description: Promotion validity end date.
+      - name: is_active
+        description: Whether the promotion is currently active in the source system.
+      - name: updated_at
+        description: Source-system last update timestamp.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Source sync timestamp.
+        data_tests:
+          - not_null
+
+  - name: stg_promo_redemptions
+    description: >
+      Staging model for promotion redemption events tied to orders and customers.
+
+      Grain: one row per redemption_id.
+    columns:
+      - name: redemption_id
+        description: Natural redemption event identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Foreign key to the order where the promotion was redeemed.
+        data_tests:
+          - not_null
+      - name: promo_id
+        description: Foreign key to the redeemed promotion.
+        data_tests:
+          - not_null
+      - name: customer_id
+        description: Foreign key to the customer who redeemed the promotion.
+      - name: discount_amount_applied
+        description: Discount amount actually applied to the order.
+      - name: redemption_status
+        description: Normalized redemption status.
+        data_tests:
+          - not_null
+      - name: failure_reason
+        description: Reason the redemption failed when redemption_status is unsuccessful.
+      - name: redeemed_at
+        description: Timestamp when the redemption event occurred.
+      - name: _loaded_at
+        description: Source sync timestamp.
+        data_tests:
+          - not_null

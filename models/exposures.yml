@@ -1,0 +1,140 @@
+version: 2
+
+exposures:
+  - name: executive_dashboard
+    label: Executive Dashboard
+    type: dashboard
+    maturity: high
+    url: "https://metabase.internal/dashboard/executive"
+    description: >
+      Board-level KPI dashboard. GMV, net revenue, MAU, retention cohorts, and city breakdown.
+      Refreshed daily at 8 AM IST. Consumed by CEO, CFO, co-founders, and investors.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_revenue')
+      - ref('fct_customer_orders')
+      - ref('fct_delivery_sla')
+      - ref('dim_customers')
+      - ref('fct_customer_retention_py')
+      - ref('dim_customer_features_py')
+
+  - name: operations_live_dashboard
+    label: Operations Live Monitor
+    type: dashboard
+    maturity: high
+    url: "https://metabase.internal/dashboard/operations"
+    description: >
+      Real-time operations monitor. Refreshed every 15 minutes.
+      Tracks on-time delivery rate, SLA breach rate, hourly city performance,
+      pending assignments, and partner utilization for Operations leadership.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_deliveries')
+      - ref('fct_delivery_sla')
+      - ref('fct_delivery_sla_hourly')
+      - ref('fct_delivery_event_log')
+      - ref('dim_delivery_partners')
+      - ref('fct_delivery_service_levels_py')
+
+  - name: restaurant_performance_dashboard
+    label: Restaurant Performance Dashboard
+    type: dashboard
+    maturity: medium
+    url: "https://metabase.internal/dashboard/restaurants"
+    description: >
+      Restaurant-level performance reporting. Revenue, ratings, acceptance rate,
+      delivery performance. Consumed by the Restaurant Partnerships team.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_restaurant_revenue')
+      - ref('dim_restaurants')
+      - ref('dim_restaurant_health_py')
+
+  - name: customer_analytics_dashboard
+    label: Customer Analytics Dashboard
+    type: dashboard
+    maturity: medium
+    url: "https://lightdash.internal/projects/zomato/dashboards/customers"
+    description: >
+      Customer lifecycle analytics. Cohort retention, LTV by segment, churn risk map,
+      acquisition channel performance. Consumed by Product and Marketing teams.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_customer_orders')
+      - ref('fct_customer_lifetime_value')
+      - ref('dim_customers')
+      - ref('dim_customer_features_py')
+      - ref('fct_customer_retention_py')
+
+  - name: finance_reconciliation_report
+    label: Daily Finance Reconciliation Report
+    type: application
+    maturity: high
+    description: >
+      Automated daily report delivered to Finance team at 8:30 AM IST.
+      Flags payment mismatches > ₹1 between payment gateway and order system.
+      Source of truth for revenue reconciliation and refund tracking.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_revenue')
+      - ref('fct_refunds')
+      - ref('dim_payment_methods')
+
+  - name: delivery_timeline_investigation_app
+    label: Delivery Timeline Investigation App
+    type: application
+    maturity: medium
+    description: >
+      Internal operations workflow used by City Managers and support leads to inspect
+      the full lifecycle of a delivery, including milestone timestamps and latest
+      delivery status, for escalations and RCA.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_delivery_event_log')
+      - ref('fct_deliveries')
+      - ref('dim_delivery_partners')
+      - ref('fct_delivery_service_levels_py')
+
+  - name: churn_prediction_pipeline
+    label: Customer Churn ML Pipeline
+    type: ml
+    maturity: medium
+    description: >
+      Snowpark ML pipeline that trains a gradient boosting churn model weekly.
+      Features are read from fct_customer_lifetime_value and int_customer_order_history.
+      Prediction scores are written back to Snowflake for CRM targeting.
+    owner:
+      name: Data Science Team
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('fct_customer_lifetime_value')
+      - ref('fct_customer_orders')
+      - ref('dim_customer_features_py')
+
+  - name: support_operations_console
+    label: Support Operations Console
+    type: application
+    maturity: medium
+    url: "https://metabase.internal/applications/support-operations"
+    description: >
+      Internal CX operations workflow for monitoring ticket backlog, agent ownership,
+      response and resolution SLA performance, and point-in-time ticket state during
+      escalations and root-cause analysis.
+    owner:
+      name: Sushil
+      email: isushilb@gmail.com
+    depends_on:
+      - ref('stg_support_tickets')
+      - ref('snp_support_tickets')

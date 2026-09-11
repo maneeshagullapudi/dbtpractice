@@ -1,0 +1,89 @@
+version: 2
+
+sources:
+  - name: zomato_restaurants
+    description: >
+      Restaurant master data and menu catalog from the Zomato Restaurant API (MySQL).
+      Loaded by Fivetran. Restaurant metadata changes infrequently (daily freshness acceptable).
+      Menu items change more frequently during onboarding campaigns.
+    database: RAW
+    schema: ZOMATO_RESTAURANTS
+    loader: fivetran
+
+    tables:
+      - name: restaurants
+        description: >
+          One row per restaurant partner. Contains profile, location, operational hours,
+          and tier classification. Tier is assigned by the Partnerships team and drives
+          priority ordering in the app.
+        columns:
+          - name: restaurant_id
+            description: Integer primary key from the Restaurant API.
+            data_tests:
+              - not_null
+              - unique
+          - name: restaurant_name
+            description: Official name as listed on the platform.
+            data_tests:
+              - not_null
+          - name: city_id
+            description: FK to geography.cities.city_id.
+            data_tests:
+              - not_null
+          - name: cuisine_type
+            description: Primary cuisine category.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['north_indian', 'south_indian', 'chinese', 'fast_food',
+                             'pizza', 'biryani', 'desserts', 'beverages', 'continental',
+                             'mughlai', 'thai', 'italian', 'mexican', 'other']
+          - name: restaurant_tier
+            description: Partner tier assigned by Partnerships team.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['platinum', 'gold', 'silver', 'bronze']
+          - name: is_active
+            description: Whether the restaurant is currently accepting orders.
+            data_tests:
+              - not_null
+          - name: average_prep_time_minutes
+            description: Self-reported average preparation time in minutes.
+          - name: created_at
+            description: Date restaurant was onboarded to the platform.
+            data_tests:
+              - not_null
+
+      - name: menu_items
+        description: >
+          One row per menu item per restaurant. Items can be inactive (sold out,
+          seasonal, discontinued). Used for order item enrichment.
+        columns:
+          - name: menu_item_id
+            description: UUID primary key.
+            data_tests:
+              - not_null
+              - unique
+          - name: restaurant_id
+            data_tests:
+              - not_null
+          - name: item_name
+            description: Display name of the menu item.
+            data_tests:
+              - not_null
+          - name: item_category
+            description: Menu category (e.g., Starters, Main Course, Beverages).
+            data_tests:
+              - not_null
+          - name: base_price
+            description: Listed price in rupees before any customizations.
+            data_tests:
+              - not_null
+          - name: is_vegetarian
+            description: Whether the item is vegetarian (FSSAI green dot classification).
+          - name: is_available
+            data_tests:
+              - not_null

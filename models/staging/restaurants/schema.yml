@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: stg_restaurants
+    description: >
+      Staging model for restaurant master data including classification,
+      commercial attributes, and quality signals.
+
+      Grain: one row per restaurant_id.
+    columns:
+      - name: restaurant_id
+        description: Natural restaurant identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: restaurant_name
+        description: Restaurant display name.
+        data_tests:
+          - not_null
+      - name: cuisine_type
+        description: Primary cuisine classification.
+      - name: restaurant_tier
+        description: Normalized commercial tier for the restaurant.
+        data_tests:
+          - not_null
+      - name: is_active
+        description: Whether the restaurant is active on the platform.
+      - name: is_verified
+        description: Whether the restaurant is verified.
+      - name: is_purely_vegetarian
+        description: Whether the restaurant serves only vegetarian food.
+      - name: city_id
+        description: Foreign key to the restaurant city.
+        data_tests:
+          - not_null
+      - name: area_id
+        description: Foreign key to the restaurant area within a city.
+      - name: average_prep_time_minutes
+        description: Typical preparation time for orders in minutes.
+      - name: minimum_order_amount
+        description: Minimum order value required by the restaurant.
+      - name: average_cost_for_two
+        description: Average basket value for two diners.
+      - name: commission_rate
+        description: Commission rate charged to the restaurant.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: overall_rating
+        description: Source-system aggregate restaurant rating.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 5
+                row_condition: "overall_rating is not null"
+      - name: total_ratings_count
+        description: Total number of ratings received by the restaurant.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: created_at
+        description: Restaurant onboarding timestamp.
+      - name: updated_at
+        description: Source-system last update timestamp.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Source sync timestamp.
+        data_tests:
+          - not_null

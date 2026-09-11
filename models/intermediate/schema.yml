@@ -1,0 +1,115 @@
+version: 2
+
+models:
+  - name: int_orders_enriched
+    description: >
+      Core order enrichment model. Joins orders to order items, customers,
+      restaurants, and cities to produce a single denormalized row per order
+      with all derived timing fields and SLA flags.
+
+      This ephemeral model is inlined as a CTE into all downstream fact models
+      (fct_revenue, fct_customer_orders, fct_restaurant_revenue, fct_deliveries).
+      Writing this logic once prevents drift across marts.
+
+      Internal platform model: safe to reuse inside this dbt project, but not a
+      published interface for BI tools or cross-project consumers.
+
+      Grain: one row per order_id.
+    config:
+      event_time: ordered_at
+      meta:
+        published: false
+        layer_role: internal_reuse
+        owner_group: platform
+
+    columns:
+      - name: order_id
+        description: Natural primary key from the Orders API.
+      - name: platform_commission
+        description: >
+          Zomato's earned commission for this order: total_amount × commission_rate.
+          Commission rate varies by restaurant tier (configured in stg_restaurants).
+      - name: is_on_time_delivery
+        description: >
+          True when delivered within the SLA window (var: delivery_sla_minutes = 45).
+          NULL for non-delivered orders (cancelled, pending, etc.).
+      - name: total_delivery_minutes
+        description: Minutes from ordered_at to delivered_at. NULL if not yet delivered.
+
+  - name: int_customer_order_history
+    description: >
+      Customer-level behavioral aggregations derived from delivered/refunded orders.
+      Computes acquisition date, recency, frequency, monetary value (RFM model inputs),
+      and churn risk tier.
+
+      This ephemeral model feeds fct_customer_orders and fct_customer_lifetime_value.
+      The churn_risk_tier uses a variable threshold (var: churn_lookback_days = 45)
+      so the Finance team can adjust without code changes.
+
+      Internal platform model: downstream marts may depend on it, but it should not be
+      treated as a stable consumer-facing contract.
+
+      Grain: one row per customer_id.
+    config:
+      meta:
+        published: false
+        layer_role: internal_reuse
+        owner_group: platform
+
+    columns:
+      - name: churn_risk_tier
+        description: >
+          high: no order in 45+ days (var: churn_lookback_days).
+          medium: no order in 21-45 days.
+          low: order within the last 21 days.
+
+  - name: int_delivery_performance
+    description: >
+      Delivery SLA metrics aggregated at daily × city grain.
+      Feeds fct_delivery_sla (delete+insert incremental model).
+
+      Computing percentiles and rates here avoids running percentile_cont()
+      in the mart where they are expensive in large incremental merges.
+
+      Internal platform model intended for mart reuse rather than direct consumption.
+
+      Grain: one row per (delivery_date, city_id).
+    config:
+      meta:
+        published: false
+        layer_role: internal_reuse
+        owner_group: platform
+
+  - name: int_restaurant_metrics
+    description: >
+      Restaurant daily order and revenue metrics. Joins restaurant orders
+      with that day's ratings to produce a single daily row per restaurant.
+
+      Feeds fct_restaurant_revenue (merge incremental).
+
+      Internal platform model intended for mart reuse rather than direct consumption.
+
+      Grain: one row per (order_date, restaurant_id).
+    config:
+      meta:
+        published: false
+        layer_role: internal_reuse
+        owner_group: platform
+
+  - name: int_payment_reconciliation
+    description: >
+      Joins successful payments to orders and computes reconciliation variance.
+      A variance of ≤ ₹1 is considered reconciled (gateway rounding tolerance).
+
+      Feeds fct_revenue (for is_reconciled flag) and the Finance reconciliation report.
+
+      Internal platform model intended for mart reuse rather than direct consumption.
+
+      Grain: one row per payment_id (one successful payment per order).
+    config:
+      event_time: ordered_at
+      meta:
+        published: false
+        layer_role: internal_reuse
+        owner_group: platform
+

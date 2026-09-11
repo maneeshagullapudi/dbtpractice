@@ -1,0 +1,168 @@
+version: 2
+
+snapshots:
+  - name: snp_restaurants
+    relation: ref('stg_restaurants')
+    description: >
+      SCD Type 2 snapshot of restaurant attributes used for historical revenue attribution
+      and point-in-time dimensional analysis.
+    config:
+      unique_key: restaurant_id
+      strategy: timestamp
+      updated_at: updated_at
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: restaurant_id
+        description: Business key for the restaurant entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null
+
+  - name: snp_customers
+    relation: ref('stg_customers')
+    description: >
+      SCD Type 2 snapshot of customer attributes used for current-state dimensions and
+      point-in-time customer analysis.
+    config:
+      unique_key: customer_id
+      strategy: timestamp
+      updated_at: updated_at
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: customer_id
+        description: Business key for the customer entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null
+
+  - name: snp_delivery_partners
+    relation: ref('stg_delivery_partners')
+    description: >
+      SCD Type 2 snapshot of delivery partner profile and operational attributes used for
+      point-in-time partner analysis and historically accurate delivery attribution.
+    config:
+      unique_key: delivery_partner_id
+      strategy: timestamp
+      updated_at: updated_at
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: delivery_partner_id
+        description: Business key for the delivery partner entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null
+
+  - name: snp_payments_check
+    relation: ref('stg_payments')
+    description: >
+      Check-strategy SCD Type 2 snapshot of payment lifecycle attributes for tracking
+      status and amount changes when no reliable source-system updated_at column is available.
+    config:
+      unique_key: payment_id
+      strategy: check
+      check_cols:
+        - order_id
+        - payment_status
+        - payment_method
+        - payment_amount
+        - gateway_fee
+        - net_amount
+        - paid_at
+        - settlement_date
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: payment_id
+        description: Business key for the payment entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null
+
+  - name: snp_payments_ingestion_backfill
+    relation: source('zomato_payments', 'payments')
+    description: >
+      Backfill-friendly payment snapshot built directly from the raw landed source using
+      the ingestion timestamp `_loaded_at` as the change clock. This captures payment-state
+      history as observed in the warehouse landing table, which is the best available
+      bootstrap path when no reliable source-system updated_at column exists.
+    config:
+      unique_key: payment_id
+      strategy: timestamp
+      updated_at: _loaded_at
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: payment_id
+        description: Business key for the payment entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null
+
+  - name: snp_support_tickets
+    relation: ref('stg_support_tickets')
+    description: >
+      SCD Type 2 snapshot of support ticket lifecycle and ownership attributes used for
+      point-in-time CX operations analysis, SLA tracking, and escalation RCA.
+    config:
+      unique_key: ticket_id
+      strategy: timestamp
+      updated_at: updated_at
+      hard_deletes: ignore
+      dbt_valid_to_current: "to_timestamp_ntz('9999-12-31 23:59:59')"
+    columns:
+      - name: ticket_id
+        description: Business key for the support ticket entity.
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        description: dbt-generated unique identifier for each snapshot version row.
+        data_tests:
+          - not_null
+          - unique
+      - name: dbt_valid_from
+        description: Timestamp when this snapshot version became valid.
+        data_tests:
+          - not_null

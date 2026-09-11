@@ -1,0 +1,17 @@
+packages:
+  # Core utility macros: surrogate keys, date spine, pivot, safe_divide, etc.
+  - package: dbt-labs/dbt_utils
+    version: [">=1.2.0", "<2.0.0"]
+
+  # Extended test library: expect_column_values_to_be_between, regex, distributions
+  - package: metaplane/dbt_expectations
+    version: [">=0.10.0", "<1.0.0"]
+
+  # Audit helper: compare model results across environments (useful for WAP validation)
+  - package: dbt-labs/audit_helper
+    version: [">=0.9.0", "<1.0.0"]
+
+
+  # Observability + artifact ingestion: metadata tables, run results, and alerting models
+  - package: elementary-data/elementary
+    version: [">=0.15.0", "<0.16.0"]

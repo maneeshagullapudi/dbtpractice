@@ -1,0 +1,71 @@
+version: 2
+
+sources:
+  - name: zomato_payments
+    description: >
+      Payment events from Razorpay gateway, consumed via Kafka and landed in Snowflake.
+      High-volume source (~500K events/day). Payment confirmations can arrive 4-6 hours
+      after order placement for UPI and net banking methods.
+      Contains financial data — governed by RBI payment data retention rules (5 years).
+    database: RAW
+    schema: ZOMATO_PAYMENTS
+    loader: kafka_consumer
+
+    tables:
+      - name: payments
+        description: >
+          One row per payment event. A single order typically has one payment,
+          but may have multiple rows for failed attempts followed by a successful retry.
+          Only rows with payment_status = 'success' are used for revenue calculations.
+        columns:
+          - name: payment_id
+            description: Razorpay payment ID (alphanumeric).
+            data_tests:
+              - not_null
+              - unique
+          - name: order_id
+            description: FK to orders.order_id.
+            data_tests:
+              - not_null
+          - name: payment_status
+            description: Final status from the payment gateway.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['success', 'failed', 'pending', 'refunded', 'disputed']
+          - name: payment_method
+            description: Method used for payment.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['upi', 'credit_card', 'debit_card', 'net_banking',
+                             'wallet', 'cash_on_delivery', 'pay_later', 'amazon_pay', 'phonepe']
+          - name: payment_amount
+            description: Amount charged to the customer in rupees.
+            data_tests:
+              - not_null
+          - name: gateway_fee
+            description: Fee charged by Razorpay (varies by payment method).
+          - name: paid_at
+            description: UTC timestamp of successful payment confirmation.
+          - name: settlement_date
+            description: Date Razorpay settles funds to Zomato (T+1 to T+3 depending on method).
+
+      - name: payment_methods
+        description: >
+          Reference table of payment method configurations including gateway fee rates.
+          Small static table (< 20 rows). Refreshed when Razorpay fee structures change.
+        columns:
+          - name: payment_method_id
+            data_tests:
+              - not_null
+              - unique
+          - name: payment_method_name
+            data_tests:
+              - not_null
+          - name: gateway_fee_rate
+            description: Percentage fee charged by gateway (e.g., 0.0125 for 1.25%).
+            data_tests:
+              - not_null

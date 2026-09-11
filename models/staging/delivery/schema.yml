@@ -1,0 +1,111 @@
+version: 2
+
+models:
+  - name: stg_deliveries
+    description: >
+      Staging model for delivery execution events and distance metrics.
+
+      Grain: one row per delivery_id.
+    config:
+      event_time: assigned_at
+    columns:
+      - name: delivery_id
+        description: Natural delivery identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Foreign key to the delivered order.
+        data_tests:
+          - not_null
+      - name: delivery_partner_id
+        description: Foreign key to the assigned delivery partner.
+      - name: delivery_status
+        description: Normalized delivery status.
+        data_tests:
+          - not_null
+      - name: failure_reason
+        description: Reason for failed or incomplete deliveries.
+      - name: assigned_at
+        description: Timestamp when the delivery was assigned.
+      - name: picked_up_at
+        description: Timestamp when the order was picked up.
+      - name: delivered_at
+        description: Timestamp when the order was delivered.
+      - name: delivery_distance_km
+        description: Delivery distance in kilometers.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: route_distance_km
+        description: Actual route distance in kilometers.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: updated_at
+        description: Source-system last update timestamp.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Source sync timestamp.
+        data_tests:
+          - not_null
+
+  - name: stg_delivery_partners
+    description: >
+      Staging model for delivery partner profile and performance attributes.
+      Sensitive columns are masked in non-production environments.
+
+      Grain: one row per delivery_partner_id.
+    columns:
+      - name: delivery_partner_id
+        description: Natural delivery partner identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: partner_name
+        description: Delivery partner name, masked outside production.
+      - name: partner_phone
+        description: Delivery partner phone number, masked outside production.
+      - name: vehicle_type
+        description: Normalized vehicle type used for deliveries.
+      - name: is_verified
+        description: Whether the partner is verified.
+      - name: is_active
+        description: Whether the partner is active.
+      - name: home_city_id
+        description: Home city identifier for the partner.
+      - name: total_deliveries_completed
+        description: Lifetime deliveries completed by the partner.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: average_rating
+        description: Lifetime average customer rating.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 5
+                row_condition: "average_rating is not null"
+      - name: acceptance_rate
+        description: Lifetime acceptance rate for offered deliveries.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+                row_condition: "acceptance_rate is not null"
+      - name: onboarded_at
+        description: Timestamp when the partner was onboarded.
+      - name: updated_at
+        description: Source-system last update timestamp.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Source sync timestamp.
+        data_tests:
+          - not_null

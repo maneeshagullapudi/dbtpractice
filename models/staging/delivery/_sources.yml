@@ -1,0 +1,93 @@
+version: 2
+
+sources:
+  - name: zomato_delivery
+    description: >
+      Delivery operations data from the Zomato Delivery Management System (MongoDB → Fivetran).
+      Contains delivery partner profiles and real-time delivery assignments.
+      Semi-structured data flattened by Fivetran before landing in Snowflake.
+    database: RAW
+    schema: ZOMATO_DELIVERY
+    loader: fivetran
+
+    tables:
+      - name: delivery_partners
+        description: >
+          One row per registered delivery partner. Includes vehicle type, verification
+          status, and operational city. Partners can operate in multiple cities.
+        columns:
+          - name: delivery_partner_id
+            description: UUID primary key.
+            data_tests:
+              - not_null
+              - unique
+          - name: partner_name
+            description: Full name. PII — masked in staging.
+            data_tests:
+              - not_null
+          - name: vehicle_type
+            description: Type of delivery vehicle.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['bicycle', 'motorcycle', 'scooter', 'car']
+          - name: home_city_id
+            description: FK to geography.cities — the partner's base city.
+            data_tests:
+              - not_null
+          - name: is_verified
+            description: Whether the partner has completed background check and training.
+            data_tests:
+              - not_null
+          - name: is_active
+            description: Whether the partner is currently enrolled and able to receive orders.
+            data_tests:
+              - not_null
+          - name: onboarded_at
+            description: Date the partner completed onboarding.
+            data_tests:
+              - not_null
+
+      - name: deliveries
+        description: >
+          One row per delivery assignment. An order generates one delivery record
+          once a delivery partner is assigned. Tracks the full delivery lifecycle
+          from assignment to completion with GPS event timestamps.
+        columns:
+          - name: delivery_id
+            description: UUID primary key.
+            data_tests:
+              - not_null
+              - unique
+          - name: order_id
+            description: FK to orders.order_id. One delivery per order.
+            data_tests:
+              - not_null
+              - unique
+              - relationships:
+                  arguments:
+                    to: source('zomato_transactional', 'orders')
+                    field: order_id
+          - name: delivery_partner_id
+            description: FK to delivery_partners.delivery_partner_id.
+            data_tests:
+              - not_null
+          - name: delivery_status
+            description: Current status of this delivery assignment.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['assigned', 'en_route_to_restaurant', 'picked_up',
+                             'out_for_delivery', 'delivered', 'failed', 'cancelled']
+          - name: assigned_at
+            description: Timestamp when delivery partner accepted the order.
+            data_tests:
+              - not_null
+          - name: picked_up_at
+            description: Timestamp when partner picked up the order from restaurant.
+          - name: delivered_at
+            description: Timestamp when order was handed to the customer.
+          - name: delivery_distance_km
+            description: Straight-line distance from restaurant to delivery address in km.
