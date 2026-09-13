@@ -1,9 +1,0 @@
-promo_id,promo_code,promo_name,promo_description,discount_type,discount_value,promo_funder,min_order_value,max_redemptions,max_redemptions_per_customer,is_new_customer_only,valid_from,valid_to,is_active,updated_at,_fivetran_synced
-PRO001,WELCOME50,Welcome Offer,50% off on first order up to ₹100,percentage,50,zomato,99,10000,1,true,2024-01-01,2024-12-31,true,2024-01-01 00:00:00,2024-01-01 01:00:00
-PRO002,FLAT100,Flat ₹100 Off,₹100 off on orders above ₹399,flat_amount,100,zomato,399,5000,3,false,2024-01-01,2024-03-31,true,2024-01-01 00:00:00,2024-01-01 01:00:00
-PRO003,FREEDEL,Free Delivery,Free delivery on any order,free_delivery,0,zomato,149,20000,5,false,2024-01-15,2024-04-15,true,2024-01-15 00:00:00,2024-01-15 01:00:00
-PRO004,BIRYANI30,Biryani Bonanza,30% off on biryani orders above ₹249,percentage,30,restaurant,249,2000,2,false,2024-01-20,2024-03-20,false,2024-01-20 00:00:00,2024-01-20 01:00:00
-PRO005,REPUBLIC26,Republic Day Special,₹75 off on orders above ₹299,flat_amount,75,zomato,299,15000,1,false,2024-01-24,2024-01-27,false,2024-01-24 00:00:00,2024-01-24 01:00:00
-PRO006,PAYTM50,Paytm Cashback,₹50 cashback on Paytm UPI payments,flat_amount,50,payment_partner,299,30000,2,false,2024-02-01,2024-02-29,false,2024-02-01 00:00:00,2024-02-01 01:00:00
-PRO007,WEEKEND20,Weekend Special,20% off on weekend orders above ₹399,percentage,20,zomato,399,8000,4,false,2024-02-10,2024-04-30,true,2024-02-10 00:00:00,2024-02-10 01:00:00
-PRO008,HOLI200,Holi Dhamaka,₹200 off on orders above ₹799,flat_amount,200,shared,799,3000,1,false,2024-03-20,2024-03-26,false,2024-03-20 00:00:00,2024-03-20 01:00:00
